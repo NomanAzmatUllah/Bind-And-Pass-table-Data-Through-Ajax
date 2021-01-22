@@ -1,0 +1,98 @@
+
+
+    $(document).ready(function () {
+
+
+        $("#search").click(function () {
+            var a = $("#from").val();
+            var b = $("#to").val();
+
+            $.ajax(
+        {
+            type: 'POST',
+            dataType: 'JSON',
+            url: '/Home/search',
+            data: {},
+            success:
+                function (json) {
+                    var tr;
+                    for (var i = 0; i < json.length; i++) {
+                        tr = $('<tr/>');
+                        tr.append("<td>" + json[i].id + "</td>");
+                        tr.append("<td>" + json[i].name + "</td>");
+                        tr.append("<td>" + json[i].savedate + "</td>");
+                        tr.append("<td class='cbCol'><input type='checkbox' class='cbCompaign' /></td>");
+                        $("#tabledata").append(tr);
+                    }
+                  
+                    //Generate HTML table.
+                    //convertJsonToHtmlTable(JSON.parse(response), $("#TableId"));
+                },
+            error:
+                function (response) {
+                    alert("Error: " + response);
+             }
+        });
+        });
+
+        $("#markAttendance").click(function () {
+            debugger;
+            var tblLength = $("#tabledata tbody tr").length;
+            for (var i = 0; i < tblLength; i++) {
+                var isRowChecked = $("#tabledata tbody tr:eq(" + i + ") td:eq(3)").find("input.cbCompaign").is(":checked") == true ? true : false;
+                if (isRowChecked == true) {
+                    var id = $("#tabledata tbody tr:eq(" + i + ") td:eq(0)").html();
+                    var name = $("#tabledata tbody tr:eq(" + i + ") td:eq(1)").html();
+                    $("#mytabledata tbody").append("<tr><td>" + id + "</td><td>" + name + "</td></tr>");
+                }
+            }
+                
+            var valdt = $("#mytabledata").tableToJSON();               
+            if (valdt.length == 0) {
+                alert("Please select Campaign")
+            }
+            else {
+                var strdata = JSON.stringify(valdt);
+                             
+                $.ajax({
+                    type: 'POST',
+                    dataType: 'JSON',
+                    url: '/Home/FindRecords',
+                    data: { table: strdata },
+                    success: function (response) {
+                        if (response.d == "True") {
+                            alert("Successfully assigned");
+                            $("#CampaignTable tbody").empty();
+                            $('#assigncampaign').attr("disabled", true);
+                        }
+                        else {
+                            alert("Not assigned or Already Assign to the Agent")
+                        }
+                     
+                    }
+                });
+            }        
+
+        });
+    });
+
+
+
+
+
+
+  public ActionResult search()
+        {
+            List<checkdata> list = db.checkdatas.ToList();
+            //List<checkdata> t = db.checkdatas.Where(x=>Convert.ToInt16(x.savedate) >= a  && Convert.ToInt16(x.savedate) <= b).ToList();
+            //db.checkdatas.ToList().Where(x => x.savedate == from.ToString() && x.savedate == to.ToString())
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+
+        public ActionResult FindRecords(string table)
+        {
+            JsonResult result = new JsonResult();
+            DataTable dt = JsonConvert.DeserializeObject<DataTable>(table);
+            return View();
+        }
